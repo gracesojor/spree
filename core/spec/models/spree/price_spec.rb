@@ -14,6 +14,19 @@ describe Spree::Price, type: :model do
     end
   end
 
+  describe '#pre_sales_amount=' do
+    let(:price) { Spree::Price.new }
+    let(:pre_sales_amount) { '169.99' }
+
+    before do
+      price.pre_sales_amount = pre_sales_amount
+    end
+
+    it 'is expected to equal to localized number' do
+      expect(price.pre_sales_amount).to eq(Spree::LocalizedNumber.parse(pre_sales_amount))
+    end
+  end
+
   describe '#price' do
     let(:price) { Spree::Price.new }
     let(:amount) { 3000.00 }
@@ -25,6 +38,21 @@ describe Spree::Price, type: :model do
 
       it 'is expected to equal to price' do
         expect(price.amount).to eq(price.price)
+      end
+    end
+  end
+
+  describe '#pre_sales_price' do
+    let(:price) { Spree::Price.new }
+    let(:pre_sales_amount) { 3000.00 }
+
+    context 'when amount is changed' do
+      before do
+        price.pre_sales_amount = pre_sales_amount
+      end
+
+      it 'is expected to equal to price' do
+        expect(price.pre_sales_amount).to eq(price.pre_sales_price)
       end
     end
   end
@@ -121,12 +149,72 @@ describe Spree::Price, type: :model do
     end
   end
 
+  describe '#pre_sales_price_including_vat_for(zone)' do
+    subject(:pre_sales_price_with_vat) { price.pre_sales_price_including_vat_for(price_options) }
+
+    let(:variant) { stub_model Spree::Variant }
+    let(:default_zone) { Spree::Zone.new }
+    let(:zone) { Spree::Zone.new }
+    let(:amount) { 10 }
+    let(:pre_sales_amount) { 100 }
+    let(:tax_category) { Spree::TaxCategory.new }
+    let(:price) { Spree::Price.new variant: variant, amount: amount, pre_sales_amount: pre_sales_amount }
+    let(:price_options) { { tax_zone: zone } }
+
+    context 'when called with a non-default zone' do
+      before do
+        allow(variant).to receive(:tax_category).and_return(tax_category)
+        expect(price).to receive(:default_zone).at_least(:once).and_return(default_zone)
+        allow(price).to receive(:apply_foreign_vat?).and_return(true)
+        allow(price).to receive(:included_tax_amount).with(tax_zone: default_zone, tax_category: tax_category).and_return(0.19)
+        allow(price).to receive(:included_tax_amount).with(tax_zone: zone, tax_category: tax_category).and_return(0.25)
+      end
+
+      it 'returns the correct price including another VAT to two digits' do
+        expect(pre_sales_price_with_vat).to eq(105.04)
+      end
+    end
+
+    context 'when called from the default zone' do
+      before do
+        allow(variant).to receive(:tax_category).and_return(tax_category)
+        expect(price).to receive(:default_zone).at_least(:once).and_return(zone)
+      end
+
+      it 'returns the correct price' do
+        expect(price).to receive(:pre_sales_price).and_call_original
+        expect(pre_sales_price_with_vat).to eq(100.00)
+      end
+    end
+
+    context 'when no default zone is set' do
+      before do
+        allow(variant).to receive(:tax_category).and_return(tax_category)
+        expect(price).to receive(:default_zone).at_least(:once).and_return(nil)
+      end
+
+      it 'returns the correct price' do
+        expect(price).to receive(:pre_sales_price).and_call_original
+        expect(price.pre_sales_price_including_vat_for(tax_zone: zone)).to eq(100.00)
+      end
+    end
+  end
+
   describe '#display_price_including_vat_for(zone)' do
     subject { Spree::Price.new amount: 10 }
 
     it 'calls #price_including_vat_for' do
       expect(subject).to receive(:price_including_vat_for)
       subject.display_price_including_vat_for(nil)
+    end
+  end
+
+  describe '#display_pre_sales_price_including_vat_for(zone)' do
+    subject { Spree::Price.new amount: 10, pre_sales_amount: 100 }
+
+    it 'calls #price_including_vat_for' do
+      expect(subject).to receive(:pre_sales_price_including_vat_for)
+      subject.display_pre_sales_price_including_vat_for(nil)
     end
   end
 end
