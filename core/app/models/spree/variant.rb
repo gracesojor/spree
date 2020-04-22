@@ -217,6 +217,10 @@ module Spree
       end.sum
     end
 
+    def pre_sales_price
+      price_in(cost_currency).try(:pre_sales_amount)
+    end
+
     def name_and_sku
       "#{name} - #{sku}"
     end

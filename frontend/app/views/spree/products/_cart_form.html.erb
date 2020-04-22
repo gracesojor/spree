@@ -27,6 +27,11 @@
   <div id="inside-product-cart-form" data-hook="inside_product_cart_form">
     <% if is_product_available_in_currency %>
       <div id="product-price" class="mb-2 text-center text-md-left add-to-cart-form-price" data-hook="product_price">
+        <span class="pre-sales-price">
+          <% if !default_variant&.pre_sales_price.nil? && !(default_variant&.pre_sales_price <= default_variant.price) %>
+            <span class="mr-3"><%= display_pre_sales_price(default_variant) %></span>
+          <% end %>
+        </span>
         <span class="price selling" content="<%= @product_price.to_d %>">
           <%= display_price(default_variant) %>
         </span>

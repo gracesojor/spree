@@ -16,6 +16,7 @@ module Spree
       @variants.map do |variant|
         {
           display_price: display_price(variant),
+          display_pre_sales_price: display_pre_sales_price(variant),
           is_product_available_in_currency: @is_product_available_in_currency,
           backorderable: backorderable?(variant),
           in_stock: in_stock?(variant),

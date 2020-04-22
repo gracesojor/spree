@@ -26,6 +26,7 @@ function CartForm($, $cartForm) {
 
     this.$addToCart = $cartForm.find(ADD_TO_CART_SELECTOR)
     this.$price = $cartForm.find('.price.selling')
+    this.$preSalesPrice = $cartForm.find('.pre-sales-price')
     this.$variantIdInput = $cartForm.find(VARIANT_ID_SELECTOR)
 
     this.initializeForm()
@@ -221,6 +222,12 @@ function CartForm($, $cartForm) {
     if (!variant) return
 
     this.$price.html(variant.display_price)
+
+    var preSalesPrice = parseFloat(variant.display_pre_sales_price.replace(',', '').substr(1))
+    var currentPrice = parseFloat(variant.display_price.replace(',', '').substr(1))
+
+    var preSalesPriceContent = preSalesPrice > currentPrice ? `<span class="mr-3">${variant.display_pre_sales_price}</span>` : ''
+    this.$preSalesPrice.html(preSalesPriceContent)
   }
 
   this.updateVariantId = function() {

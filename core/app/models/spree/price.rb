@@ -15,8 +15,14 @@ module Spree
       less_than_or_equal_to: MAXIMUM_AMOUNT
     }
 
+    validates :pre_sales_amount, allow_nil: true, numericality: {
+      greater_than_or_equal_to: 0,
+      less_than_or_equal_to: MAXIMUM_AMOUNT
+    }
+
     extend DisplayMoney
-    money_methods :amount, :price
+    money_methods :amount, :price, :pre_sales_amount
+    alias display_pre_sales_price display_pre_sales_amount
 
     self.whitelisted_ransackable_attributes = ['amount']
 
@@ -28,15 +34,33 @@ module Spree
       self[:amount] = Spree::LocalizedNumber.parse(amount)
     end
 
+    def pre_sales_money
+      Spree::Money.new(pre_sales_amount || 0, currency: currency)
+    end
+
+    def pre_sales_amount=(pre_sales_amount)
+      self[:pre_sales_amount] = Spree::LocalizedNumber.parse(pre_sales_amount)
+    end
+
     alias_attribute :price, :amount
+    alias_attribute :pre_sales_price, :pre_sales_amount
 
     def price_including_vat_for(price_options)
       options = price_options.merge(tax_category: variant.tax_category)
       gross_amount(price, options)
     end
 
+    def pre_sales_price_including_vat_for(price_options)
+      options = price_options.merge(tax_category: variant.tax_category)
+      gross_amount(pre_sales_price, options)
+    end
+
     def display_price_including_vat_for(price_options)
       Spree::Money.new(price_including_vat_for(price_options), currency: currency)
+    end
+
+    def display_pre_sales_price_including_vat_for(price_options)
+      Spree::Money.new(pre_sales_price_including_vat_for(price_options), currency: currency)
     end
 
     # Remove variant default_scope `deleted_at: nil`
